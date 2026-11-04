@@ -1,0 +1,115 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Flutter: pub outdated",
+			"type": "shell",
+			"command": "flutter",
+			"args": [
+				"pub",
+				"outdated"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Flutter: pub upgrade",
+			"type": "shell",
+			"command": "flutter",
+			"args": [
+				"pub",
+				"upgrade"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Flutter: run app",
+			"type": "shell",
+			"command": "flutter",
+			"args": [
+				"run"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Flutter: run on Windows",
+			"type": "shell",
+			"command": "flutter",
+			"args": [
+				"run",
+				"-d",
+				"windows"
+			],
+			"isBackground": true,
+			"problemMatcher": []
+		},
+		{
+			"label": "Flutter: build apk release",
+			"type": "shell",
+			"command": "flutter",
+			"args": [
+				"build",
+				"apk",
+				"--release"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Flutter: clean",
+			"type": "shell",
+			"command": "flutter",
+			"args": [
+				"clean"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Flutter: clean 2",
+			"type": "shell",
+			"command": "flutter",
+			"args": [
+				"clean"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Flutter: pub get",
+			"type": "shell",
+			"command": "flutter",
+			"args": [
+				"pub",
+				"get"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Flutter: test carbon scoring",
+			"type": "shell",
+			"command": "flutter",
+			"args": [
+				"test",
+				"test/carbon_scoring_repository_test.dart"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Flutter: test chatbot",
+			"type": "shell",
+			"command": "flutter",
+			"args": [
+				"test",
+				"test/chatbot_controller_test.dart",
+				"test/chatbot_page_test.dart"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		}
+	]
+}

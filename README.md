@@ -18,6 +18,17 @@ O EcoWallet une tecnologia e engenharia de software para apoiar a transição pa
 
 ---
 
+## 🚀 Captura Automática de Transações (Engine Nativa)
+
+O EcoWallet registra despesas sem digitação manual, usando uma engine nativa no Android:
+
+* **NotificationListenerService:** um serviço nativo escuta as notificações do sistema em tempo real e filtra apenas os pacotes de apps bancários suportados (ex: Mercado Pago, Nubank, Itaú).
+* **Parser com Expressões Regulares (RegEx):** o texto do push é analisado por padrões específicos de cada instituição, extraindo o **valor da despesa** (formato `R$ 1.234,56`) e o **estabelecimento**.
+* **Privacidade por design:** somente valor e estabelecimento são extraídos. O texto bruto da notificação é descartado após o parse e nunca é persistido nem enviado a terceiros. Notificações que não casam com os padrões são ignoradas. O acesso depende de permissão explícita do usuário e pode ser revogado a qualquer momento.
+* **Testabilidade:** a lógica de parsing é isolada da camada de plataforma e coberta por testes unitários (`test/notification_parser_test.dart`).
+
+---
+
 ## Arquitetura e Engenharia de Software
 
 O ecossistema foi projetado com foco em escalabilidade, testabilidade e manutenibilidade, separando as responsabilidades de software de acordo com as boas práticas de desenvolvimento mobile.
