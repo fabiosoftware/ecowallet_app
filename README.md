@@ -1,82 +1,45 @@
-# EcoWallet App
+# EcoWallet
 
-Ecossistema mobile inteligente focado em impacto socioambiental positivo, finanças pessoais sustentáveis e integração com inteligência artificial.
+### Um ecossistema multiplataforma voltado para critérios ESG, finanças pessoais e sustentabilidade urbana.
 
-Projeto selecionado, validado e acelerado internacionalmente entre os 100 finalistas do programa de empreendedorismo Santander X Explorer.
+**O EcoWallet foi selecionado e acelerado internacionalmente pelo programa Santander X Explorer, figurando entre os Top 100 Finalistas.**
 
----
+O EcoWallet combina tecnologia e consciência socioambiental para apoiar decisões financeiras mais sustentáveis. O projeto integra recursos de gestão financeira, inteligência artificial e estimativas de impacto ambiental em uma experiência digital acessível e orientada ao consumo consciente.
 
-## Sobre o EcoWallet
+## 📱 Funcionalidades Principais
 
-O EcoWallet une tecnologia e engenharia de software para apoiar a transição para uma economia de baixo carbono. O aplicativo combina o monitoramento de despesas financeiras a critérios rígidos de ESG, ajudando usuários a tomarem decisões de consumo mais conscientes através de gamificação e dados mensuráveis.
+- **Monitoramento inteligente de gastos:** acompanha e organiza gastos e transações, com recursos de automação para reduzir a necessidade de registro manual.
+- **EcoBot com inteligência artificial:** oferece uma interface conversacional para apoiar consultas e apresentar orientações e insights relacionados a sustentabilidade e finanças pessoais, com integração a microsserviços de IA.
+- **Estimativa de pegada de carbono:** associa atividades de consumo a estimativas de impacto ambiental e apresenta informações para incentivar escolhas mais conscientes.
+- **Insights de consumo consciente:** transforma os dados disponíveis em sinais compreensíveis que ajudam o usuário a refletir sobre seus hábitos.
+- **Gamificação sustentável:** utiliza pontuação, recompensas e metas para incentivar práticas sustentáveis no cotidiano.
 
-### Funcionalidades Principais
+> As estimativas e pontuações de carbono têm finalidade informativa e de engajamento. A comunicação de resultados como inventário ou declaração ESG exige metodologia, fronteiras, fontes de fatores de emissão e incertezas devidamente documentadas.
 
-* Gestão Inteligente de Gastos: Monitoramento de transações financeiras associado ao cálculo automatizado de pegada de carbono.
-* Recompensas Eco: Sistema de gamificação estruturado para engajar o usuário, gerando pontos e prêmios por hábitos sustentáveis no dia a dia.
-* EcoBot: Assistente virtual inteligente integrado para consultas ecológicas e financeiras em tempo real, fornecendo insights personalizados baseados em IA.
+## 🏗️ Arquitetura e Engenharia de Software
 
----
+O aplicativo é desenvolvido em Flutter e organiza suas responsabilidades em camadas de **Data**, **Domain** e **Presentation**, seguindo os princípios da Clean Architecture. Essa separação busca manter regras de negócio independentes de detalhes de interface, armazenamento e serviços externos, facilitando manutenção, evolução e testes.
 
-## 🚀 Captura Automática de Transações (Engine Nativa)
+- **Data:** concentra fontes de dados, modelos e repositórios responsáveis por obter, converter e persistir informações.
+- **Domain:** reúne entidades, contratos de repositórios e regras de negócio, sem depender diretamente dos frameworks da interface ou de fornecedores externos.
+- **Presentation:** contém telas, componentes e controladores que apresentam informações e recebem as interações do usuário.
+- **BLoC/Cubit:** o pacote `flutter_bloc` organiza o estado da interface em fluxos previsíveis e reativos, separando eventos e estados da renderização visual.
+- **Testes automatizados:** a biblioteca `bloc_test` apoia a validação de estados e transições dos componentes BLoC/Cubit. Testes unitários e de widgets complementam a verificação das regras e da experiência da aplicação.
 
-O EcoWallet registra despesas sem digitação manual, usando uma engine nativa no Android:
+## ⚙️ Persistência e Infraestrutura
 
-* **NotificationListenerService:** um serviço nativo escuta as notificações do sistema em tempo real e filtra apenas os pacotes de apps bancários suportados (ex: Mercado Pago, Nubank, Itaú).
-* **Parser com Expressões Regulares (RegEx):** o texto do push é analisado por padrões específicos de cada instituição, extraindo o **valor da despesa** (formato `R$ 1.234,56`) e o **estabelecimento**.
-* **Privacidade por design:** somente valor e estabelecimento são extraídos. O texto bruto da notificação é descartado após o parse e nunca é persistido nem enviado a terceiros. Notificações que não casam com os padrões são ignoradas. O acesso depende de permissão explícita do usuário e pode ser revogado a qualquer momento.
-* **Testabilidade:** a lógica de parsing é isolada da camada de plataforma e coberta por testes unitários (`test/notification_parser_test.dart`).
+- **Dados locais e cache:** `shared_preferences` oferece armazenamento assíncrono de pequenas preferências e valores locais, como configurações e dados simples de sessão. O uso de cache deve respeitar a natureza e a sensibilidade de cada informação.
+- **Serviços em nuvem:** a integração com Firebase fornece componentes de infraestrutura para autenticação e persistência remota, conforme os serviços habilitados e configurados para o ambiente.
+- **Configuração e segredos:** configurações específicas de ambiente podem ser carregadas por variáveis em um arquivo `.env` local, mantido fora do controle de versão. Chaves privadas e credenciais de produção devem ser fornecidas por mecanismos seguros de configuração, nunca adicionadas ao repositório.
+- **Tratamento de erros:** falhas de rede, autenticação ou persistência devem ser tratadas explicitamente para preservar uma experiência clara, sem apresentar dados incompletos como se fossem resultados confirmados.
+- **Automação com n8n:** fluxos automatizados podem conectar o aplicativo a serviços externos por meio de webhooks. A integração pode orquestrar tarefas de IA e processamento, usando engenharia de prompts para definir instruções e o formato esperado das respostas.
+- **Privacidade:** integrações externas devem receber somente os dados necessários à operação. O tratamento de dados pessoais e financeiros deve considerar consentimento, segurança, retenção e requisitos aplicáveis de proteção de dados.
 
----
+## 🚀 Como Executar
 
-## Arquitetura e Engenharia de Software
-
-O ecossistema foi projetado com foco em escalabilidade, testabilidade e manutenibilidade, separando as responsabilidades de software de acordo com as boas práticas de desenvolvimento mobile.
-
-### Padrão Arquitetural: Clean Architecture
-A estrutura do projeto está organizada de forma modular dentro do diretório lib:
-* app/: Configurações globais do sistema, temas e rotas.
-* features/: Funcionalidades isoladas de negócio, contendo as views e componentes de interface.
-* repositories/: Camada de dados responsável por gerenciar a origem das informações, abstraindo consumos de APIs externas e locais.
-* src/: Núcleo de regras e lógicas compartilhadas do app.
-
-### Gerenciamento de Estado Avançado
-Para manter a interface puramente reativa e isolada das regras de negócio, o projeto utiliza o padrão BLoC / Cubit através do pacote flutter_bloc. Isso garante um fluxo de dados unidirecional, previsível e testável com o suporte de ferramentas como bloc_test.
-
-### Principais Tecnologias e Dependências
-* Framework Principal: Flutter e Dart
-* Gerenciamento de Estado: flutter_bloc (^8.1.3)
-* Persistência de Dados Local: shared_preferences (^2.5.3)
-* Testes de Estado: bloc_test (^9.1.5)
-* Segurança: Gerenciamento de credenciais e chaves via variáveis de ambiente (.env)
-* Automações e IA: Integrações assíncronas via Webhooks de LLM e automação de fluxos de trabalho através do n8n.
-
----
-
-## Como Executar o Projeto Localmente
-
-### Pré-requisitos
-Certifique-se de ter o Flutter SDK instalado e configurado na sua máquina.
-
-1. Clonar o repositório:
-git clone https://github.com
-
-2. Entrar na pasta do projeto:
-cd ecowallet_app
-
-3. Instalar as dependências do Flutter:
-flutter pub get
-
-4. Configurar as Variáveis de Ambiente:
-Crie um arquivo .env na raiz do projeto seguindo o modelo de chaves necessárias para a comunicação com os serviços de IA e automação externa.
-
-5. Executar o aplicativo:
-flutter run
-
----
-
-## Desenvolvedor
-
-* Fabio Coelho Moura - Idealizador e Engenheiro de Software Mobile
-* LinkedIn: ://linkedin.com
-* GitHub: ://github.com
+1. **Preparar o ambiente:** instale e configure o Flutter SDK e as ferramentas necessárias para a plataforma de destino, como Android Studio para execução em Android.
+2. **Obter o projeto:** clone o repositório EcoWallet para sua máquina e abra a pasta do projeto no VS Code ou em outra IDE compatível com Flutter.
+3. **Baixar as dependências:** execute a resolução de pacotes Flutter na raiz do projeto para instalar as dependências declaradas.
+4. **Configurar integrações:** caso o ambiente utilize serviços externos, configure as variáveis de ambiente e os arquivos de configuração locais necessários. Não compartilhe nem versione credenciais.
+5. **Iniciar o aplicativo:** selecione um dispositivo ou emulador compatível e execute o app pelo fluxo de execução do Flutter na IDE ou pelo terminal.
+6. **Executar testes:** antes de contribuir ou publicar alterações, rode os testes automatizados do projeto e verifique eventuais avisos de análise estática.
