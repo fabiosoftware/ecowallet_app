@@ -32,6 +32,16 @@ O aplicativo é desenvolvido em Flutter e organiza suas responsabilidades em cam
 - **BLoC/Cubit:** o pacote `flutter_bloc` organiza o estado da interface em fluxos previsíveis e reativos, separando eventos e estados da renderização visual.
 - **Testes automatizados:** a biblioteca `bloc_test` apoia a validação de estados e transições dos componentes BLoC/Cubit. Testes unitários e de widgets complementam a verificação das regras e da experiência da aplicação.
 
+### Competências Técnicas e Integração Full-Stack
+
+- **Desenvolvimento mobile com Flutter e Dart:** experiência multiplataforma com organização em Clean Architecture, gerenciamento reativo de estado e captura automatizada de transações por notificações, reduzindo a latência entre a atividade financeira e sua apresentação no aplicativo.
+- **Backend corporativo com Golang:** microsserviço REST organizado em camadas, com contratos OpenAPI, endpoints para resumos e séries temporais de carbono, validação de período, health checks e isolamento de acesso por empresa. A separação entre serviço e armazenamento permite evoluir a persistência sem acoplar as regras de negócio aos handlers.
+- **EcoBot e inteligência artificial:** integração conversacional com serviços de IA e fluxos automatizados via webhooks/n8n, combinando engenharia de prompts com respostas contextualizadas para apoiar decisões financeiras e sustentáveis.
+- **Nuvem e persistência:** Firebase oferece recursos de autenticação e armazenamento remoto para os fluxos do aplicativo. A arquitetura separa dados corporativos agregados do microsserviço Go dos dados operacionais do app, preparando a evolução para persistência gerenciada e processamento escalável.
+- **Fluxo integrado de dados:** captura de transações no mobile, enriquecimento com estimativas de carbono e apresentação de insights formam um fluxo orientado a atualização rápida; as APIs REST permitem disponibilizar métricas agregadas às experiências administrativas B2B.
+
+> **Estado do backend Go:** o serviço REST e seus contratos estão estruturados, mas o armazenamento atual é demonstrativo e em memória. Autenticação Firebase e persistência corporativa de produção ainda precisam ser conectadas antes de usar o microsserviço com dados reais.
+
 ## ⚙️ Persistência e Infraestrutura
 
 - **Dados locais e cache:** `shared_preferences` oferece armazenamento assíncrono de pequenas preferências e valores locais, como configurações e dados simples de sessão. O uso de cache deve respeitar a natureza e a sensibilidade de cada informação.
