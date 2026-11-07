@@ -1,6 +1,7 @@
 import 'notification_access_event.dart';
 
-NotificationAccess createNotificationAccess() => _UnsupportedNotificationAccess();
+NotificationAccess createNotificationAccess() =>
+    _UnsupportedNotificationAccess();
 
 abstract interface class NotificationAccess {
   bool get isSupported;

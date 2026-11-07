@@ -15,6 +15,8 @@ import 'app/presentation/controllers/expense_controller.dart';
 import 'app/presentation/pages/main_navigation_page.dart';
 import 'features/wallet/data/repositories/carbon_score_repository.dart';
 import 'repositories/carbon_score_repository.dart';
+import 'src/data/repositories/carbon_scoring_repository_impl.dart';
+import 'src/domain/repositories/carbon_scoring_repository.dart' as climatiq;
 import 'src/domain/services/card_transaction_listener_service.dart';
 
 export 'app/presentation/pages/wallet_page.dart';
@@ -51,6 +53,8 @@ class _BootstrapState extends State<_Bootstrap> {
           return MyApp(
             controller: services.controller,
             carbonScores: services.carbonScores,
+            carbonEstimates: services.carbonEstimates,
+            climatiqActivityIds: _climatiqActivityIds,
           );
         }
         return MaterialApp(
@@ -149,6 +153,15 @@ const _startupTimeout = Duration(seconds: 45);
 
 Future<FirebaseApp>? _firebaseInitialization;
 
+/// Chave da Climatiq: `--dart-define=CLIMATIQ_API_KEY=...`. Sem ela, o chatbot
+/// mantém o cálculo local de pontos.
+const _climatiqApiKey = String.fromEnvironment('CLIMATIQ_API_KEY');
+
+/// `activity_id` da Climatiq por categoria de gasto do chatbot
+/// (`combustivel`, `alimentacao`, `gasto_sustentavel`). Categorias ausentes
+/// usam o cálculo local; preencha com IDs válidos do Data Explorer.
+const Map<String, String> _climatiqActivityIds = {};
+
 /// Serviços prontos após a inicialização. [carbonScores] só existe quando o
 /// Firebase e o login concluíram com sucesso; caso contrário é `null` e o
 /// chatbot usa a resposta de fallback.
@@ -157,11 +170,13 @@ class _AppServices {
     required this.controller,
     required this.notificationCapture,
     this.carbonScores,
+    this.carbonEstimates,
   });
 
   final ExpenseController controller;
   final NotificationExpenseCaptureService notificationCapture;
   final CarbonScoreRepository? carbonScores;
+  final climatiq.CarbonScoringRepository? carbonEstimates;
 }
 
 class _RepositorySetup {
@@ -185,6 +200,9 @@ Future<_AppServices> _createServices() async {
     controller: controller,
     notificationCapture: notificationCapture,
     carbonScores: setup.carbonScores,
+    carbonEstimates: setup.carbonScores == null || _climatiqApiKey.isEmpty
+        ? null
+        : CarbonScoringRepositoryImpl(apiKey: _climatiqApiKey),
   );
 }
 
@@ -313,11 +331,15 @@ class MyApp extends StatelessWidget {
     super.key,
     required this.controller,
     this.carbonScores,
+    this.carbonEstimates,
+    this.climatiqActivityIds = const {},
     this.notificationCapture,
   });
 
   final ExpenseController controller;
   final CarbonScoreRepository? carbonScores;
+  final climatiq.CarbonScoringRepository? carbonEstimates;
+  final Map<String, String> climatiqActivityIds;
   final NotificationExpenseCaptureService? notificationCapture;
   @override
   Widget build(BuildContext context) {
@@ -328,8 +350,10 @@ class MyApp extends StatelessWidget {
       home: MainNavigationPage(
         controller: controller,
         carbonScores: carbonScores,
+        carbonEstimates: carbonEstimates,
+        climatiqActivityIds: climatiqActivityIds,
         notificationCapture: notificationCapture,
       ),
     );
-
-
+  }
+}

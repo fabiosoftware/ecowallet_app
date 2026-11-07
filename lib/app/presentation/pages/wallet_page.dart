@@ -71,7 +71,8 @@ class WalletPage extends StatelessWidget {
     if (capture.status.value == NotificationCaptureStatus.unsupported) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('A captura de notificações está disponível somente no Android.'),
+          content: Text(
+              'A captura de notificações está disponível somente no Android.'),
         ),
       );
       return;

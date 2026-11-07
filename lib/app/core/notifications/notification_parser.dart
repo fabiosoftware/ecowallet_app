@@ -142,10 +142,8 @@ class NotificationParser {
   /// após o último termo em caixa alta).
   static String _mercadoPagoMerchant(String raw) {
     final prefix = _mercadoPagoPrefix.firstMatch(raw)!;
-    final name = raw
-        .substring(prefix.end)
-        .replaceAll(RegExp('[\'"“”‘’`´*]'), '')
-        .trim();
+    final name =
+        raw.substring(prefix.end).replaceAll(RegExp('[\'"“”‘’`´*]'), '').trim();
     final words = name.split(' ').where((w) => w.isNotEmpty).toList();
     if (words.isEmpty) return '';
     var lastUpper = words.lastIndexWhere(

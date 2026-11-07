@@ -4,6 +4,8 @@ import '../../core/notifications/notification_expense_capture_service.dart';
 import '../../../features/wallet/data/repositories/carbon_score_repository.dart';
 import '../../../features/wallet/presentation/pages/eco_rewards_dashboard_page.dart';
 import '../../../repositories/carbon_score_repository.dart';
+import '../../../src/domain/repositories/carbon_scoring_repository.dart'
+    as climatiq;
 import '../controllers/chatbot_controller.dart';
 import '../controllers/expense_controller.dart';
 import 'chatbot_page.dart';
@@ -14,6 +16,8 @@ class MainNavigationPage extends StatefulWidget {
     super.key,
     required this.controller,
     this.carbonScores,
+    this.carbonEstimates,
+    this.climatiqActivityIds = const {},
     this.notificationCapture,
   });
 
@@ -22,6 +26,10 @@ class MainNavigationPage extends StatefulWidget {
   /// Disponível apenas quando o Firebase inicializou com sucesso; `null`
   /// mantém o chatbot com a resposta de fallback.
   final CarbonScoreRepository? carbonScores;
+
+  /// Estimativas de emissão da Climatiq; `null` mantém o cálculo local.
+  final climatiq.CarbonScoringRepository? carbonEstimates;
+  final Map<String, String> climatiqActivityIds;
   final NotificationExpenseCaptureService? notificationCapture;
 
   @override
@@ -41,6 +49,8 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
       carbonScoring: carbonScores == null
           ? null
           : CarbonScoringRepository(userId: carbonScores.userId),
+      carbonEstimates: widget.carbonEstimates,
+      climatiqActivityIds: widget.climatiqActivityIds,
     );
   }
 

@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 import '../controllers/chatbot_controller.dart';
 
@@ -115,14 +115,15 @@ class _ChatbotPageState extends State<ChatbotPage> {
                     spacing: 8,
                     runSpacing: 4,
                     children: [
-                      for (final suggestion in widget.controller.quickSuggestions)
+                      for (final suggestion
+                          in widget.controller.quickSuggestions)
                         ActionChip(
                           key: ValueKey('chip_$suggestion'),
                           label: Text(suggestion),
                           onPressed: widget.controller.isTyping
                               ? null
-                              : () =>
-                                  widget.controller.selectSuggestion(suggestion),
+                              : () => widget.controller
+                                  .selectSuggestion(suggestion),
                         ),
                     ],
                   ),

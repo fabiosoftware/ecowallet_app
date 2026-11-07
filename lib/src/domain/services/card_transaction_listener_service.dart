@@ -169,8 +169,8 @@ class CardTransactionListenerService {
   static const List<_Rule> _rules = [
     _Rule(['posto', 'shell', 'ipiranga', 'combust'], ExpenseCategory.transport,
         'combustivel'),
-    _Rule(['uber', '99', 'metro', 'ônibus', 'onibus'], ExpenseCategory.transport,
-        'transporte'),
+    _Rule(['uber', '99', 'metro', 'ônibus', 'onibus'],
+        ExpenseCategory.transport, 'transporte'),
     _Rule(['starbucks', 'café', 'cafe', 'padaria', 'lanchonete'],
         ExpenseCategory.coffee, 'alimentacao'),
     _Rule(['restaurante', 'ifood', 'burger', 'pizza', 'lanche'],

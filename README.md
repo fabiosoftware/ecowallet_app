@@ -2,6 +2,12 @@
 
 ### Um ecossistema multiplataforma voltado para critérios ESG, finanças pessoais e sustentabilidade urbana.
 
+## 📸 Demonstração Visual
+
+| 💵 Controle de Gastos | 🌱 Recompensas Eco | 🤖 Assistente EcoBot |
+| :---: | :---: | :---: |
+| <img src="assets/gastos.jpg" width="250"> | <img src="assets/recompensas.jpg" width="250"> | <img src="assets/ecobot.jpg" width="250"> |
+
 **O EcoWallet foi selecionado e acelerado internacionalmente pelo programa Santander X Explorer, figurando entre os Top 100 Finalistas.**
 
 O EcoWallet combina tecnologia e consciência socioambiental para apoiar decisões financeiras mais sustentáveis. O projeto integra recursos de gestão financeira, inteligência artificial e estimativas de impacto ambiental em uma experiência digital acessível e orientada ao consumo consciente.

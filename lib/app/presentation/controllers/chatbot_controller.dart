@@ -2,8 +2,11 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
+import '../../../features/wallet/data/models/carbon_score_model.dart';
 import '../../../features/wallet/data/repositories/carbon_score_repository.dart';
 import '../../../repositories/carbon_score_repository.dart' as scoring;
+import '../../../src/domain/repositories/carbon_scoring_repository.dart'
+    as climatiq;
 
 enum ChatAuthor { user, bot }
 
@@ -61,10 +64,14 @@ class ChatbotController extends ChangeNotifier {
   ChatbotController({
     CarbonScoreRepository? carbonScores,
     scoring.CarbonScoringRepository? carbonScoring,
+    climatiq.CarbonScoringRepository? carbonEstimates,
+    Map<String, String> climatiqActivityIds = const {},
     this.replyDelay = const Duration(milliseconds: 900),
     DateTime Function()? clock,
   })  : _carbonScores = carbonScores,
         _carbonScoring = carbonScoring,
+        _carbonEstimates = carbonEstimates,
+        _activityIds = climatiqActivityIds,
         _now = clock ?? DateTime.now;
 
   static const welcomeText =
@@ -136,6 +143,14 @@ class ChatbotController extends ChangeNotifier {
 
   final CarbonScoreRepository? _carbonScores;
   final scoring.CarbonScoringRepository? _carbonScoring;
+
+  /// Estimativas de emissão (Climatiq). Quando presente junto de
+  /// [_carbonScores], o score das ações é calculado por emissão e gravado como
+  /// `greenPointsEarned`; qualquer falha recai no cálculo local.
+  final climatiq.CarbonScoringRepository? _carbonEstimates;
+
+  /// `activity_id` da Climatiq por categoria de gasto.
+  final Map<String, String> _activityIds;
   final Duration replyDelay;
   final DateTime Function() _now;
 
@@ -329,6 +344,9 @@ class ChatbotController extends ChangeNotifier {
           'para eu calcular seus pontos.';
     }
 
+    final estimated = await _applyEstimatedAction(action);
+    if (estimated != null) return estimated;
+
     final points = scoring.CarbonScoringRepository.calculateNewPoints(
       valorTransacao: action.value,
       categoria: action.category,
@@ -370,6 +388,54 @@ class ChatbotController extends ChangeNotifier {
         ? 'Gasto registrado. Ele gera pegada de carbono e reduz seu Carbon '
             'Score em $rounded pontos. Recicle para recuperar pontos! 🌱'
         : 'Gasto registrado no seu Carbon Score.';
+  }
+
+  /// Calcula o Green Score pela emissão (reciclagem não emite; gastos usam a
+  /// Climatiq) e grava o resultado em `carbon_scores`, de onde a aba
+  /// Recompensas lê `greenPointsEarned`. Devolve `null` quando não for
+  /// possível, para o fluxo local assumir.
+  Future<String?> _applyEstimatedAction(SustainableAction action) async {
+    final estimates = _carbonEstimates;
+    final repository = _carbonScores;
+    if (estimates == null || repository == null) return null;
+
+    final category = action.isRecycling ? 'reciclagem' : action.category;
+    final activityId = _activityIds[action.category];
+    if (!action.isRecycling && activityId == null) return null;
+
+    try {
+      var co2eKg = 0.0;
+      if (!action.isRecycling) {
+        final estimate = await estimates.estimate(
+          activityId: activityId!,
+          parameters: {'money': action.value, 'money_unit': 'brl'},
+        ).timeout(_queryTimeout);
+        co2eKg = estimate.co2eKg;
+      }
+
+      final result =
+          estimates.calculateGreenScore(co2eKg: co2eKg, category: category);
+      final now = _now();
+      await repository
+          .saveCarbonScore(
+            CarbonScoreModel(
+              transactionId: 'chat_${now.microsecondsSinceEpoch}',
+              carbonFootprintKg: result.co2eKg,
+              greenPointsEarned: result.pointsEarned,
+              timestamp: now,
+            ),
+          )
+          .timeout(_queryTimeout);
+
+      final footprint = result.co2eKg.toStringAsFixed(1);
+      final bonus = result.bonusPoints > 0 ? ' (bônus ecológico incluído)' : '';
+      return 'Ação registrada! 🌿 Pegada estimada: $footprint kg CO₂e. '
+          'Green Score ${result.score}/${climatiq.greenScoreCeiling}$bonus: '
+          '+${result.pointsEarned} pontos verdes.';
+    } catch (e) {
+      debugPrint('Falha ao pontuar via Climatiq: $e');
+      return null;
+    }
   }
 
   Future<String> _pointsReply() async {
@@ -426,7 +492,8 @@ class ChatbotController extends ChangeNotifier {
     bool has(List<String> words) => words.any(q.contains);
 
     if (has(_habitKeywords)) {
-      final suggestion = habitSuggestions[_habitIndex % habitSuggestions.length];
+      final suggestion =
+          habitSuggestions[_habitIndex % habitSuggestions.length];
       _habitIndex++;
       return suggestion;
     }
