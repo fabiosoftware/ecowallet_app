@@ -6,7 +6,7 @@
 
 | 💵 Controle de Gastos | 🌱 Recompensas Eco | 🤖 Assistente EcoBot |
 | :---: | :---: | :---: |
-| <img src="assets/gastos.jpg" width="250"> | <img src="assets/recompensas.jpg" width="250"> | <img src="assets/ecobot.jpg" width="250"> |
+| <img src="assets/gastos.JPEG" width="250"> | <img src="assets/recompensa.JPEG" width="250"> | <img src="assets/ecobot.JPEG" width="250"> |
 
 **O EcoWallet foi selecionado e acelerado internacionalmente pelo programa Santander X Explorer, figurando entre os Top 100 Finalistas.**
 
