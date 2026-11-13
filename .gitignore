@@ -1,5 +1,18 @@
 # Secrets and local artifacts
 .env
+.env.*
+google-services.json
+GoogleService-Info.plist
+firebase_options.dart
+*service-account*.json
+*service_account*.json
+*firebase-adminsdk*.json
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
 .kotlin/
 .firebase/
 hs_err_pid*.log
@@ -37,7 +50,7 @@ migrate_working_dir/
 .flutter-plugins-dependencies
 .pub-cache/
 .pub/
-/build/
+build/
 
 # Symbolication related
 app.*.symbols

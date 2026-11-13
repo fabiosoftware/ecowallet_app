@@ -71,7 +71,7 @@ class _EcoRewardsDashboardPageState extends State<EcoRewardsDashboardPage> {
       backgroundColor: const Color(0xFFF1F5F2),
       appBar: AppBar(
         title: const Text(
-          'Recompensas Eco',
+          'Impacto de carbono e ESG',
           style: TextStyle(fontWeight: FontWeight.w700, letterSpacing: -0.5),
         ),
         centerTitle: false,
@@ -103,6 +103,18 @@ class _EcoRewardsDashboardPageState extends State<EcoRewardsDashboardPage> {
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
               physics: const BouncingScrollPhysics(),
               children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(4, 8, 4, 0),
+                  child: Text(
+                    'Acompanhe estimativas de carbono e pontos associados às '
+                    'transações. Os valores são informativos e não equivalem '
+                    'a um inventário de emissões verificado.',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: _graphiteSoft,
+                        ),
+                  ),
+                ),
+                const SizedBox(height: 16),
                 _BalanceHeader(points: totalPoints),
                 const SizedBox(height: 28),
                 const _SectionTitle(
@@ -119,7 +131,7 @@ class _EcoRewardsDashboardPageState extends State<EcoRewardsDashboardPage> {
                 const SizedBox(height: 28),
                 const _SectionTitle(
                   icon: Icons.history_rounded,
-                  title: 'Últimas transações ecológicas',
+                  title: 'Histórico de estimativas ambientais',
                 ),
                 const SizedBox(height: 8),
                 if (history.isEmpty)

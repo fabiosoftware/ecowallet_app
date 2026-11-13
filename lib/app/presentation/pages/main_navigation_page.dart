@@ -1,6 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../core/notifications/notification_expense_capture_service.dart';
+import '../../domain/entities/user_entity.dart';
+import '../../domain/repositories/user_repository.dart';
 import '../../../features/wallet/data/repositories/carbon_score_repository.dart';
 import '../../../features/wallet/presentation/pages/eco_rewards_dashboard_page.dart';
 import '../../../repositories/carbon_score_repository.dart';
@@ -8,6 +12,7 @@ import '../../../src/domain/repositories/carbon_scoring_repository.dart'
     as climatiq;
 import '../controllers/chatbot_controller.dart';
 import '../controllers/expense_controller.dart';
+import '../widgets/plan_guard_widget.dart';
 import 'chatbot_page.dart';
 import 'wallet_page.dart';
 
@@ -17,6 +22,7 @@ class MainNavigationPage extends StatefulWidget {
     required this.controller,
     this.carbonScores,
     this.carbonEstimates,
+    this.userRepository,
     this.climatiqActivityIds = const {},
     this.notificationCapture,
   });
@@ -26,6 +32,7 @@ class MainNavigationPage extends StatefulWidget {
   /// Disponível apenas quando o Firebase inicializou com sucesso; `null`
   /// mantém o chatbot com a resposta de fallback.
   final CarbonScoreRepository? carbonScores;
+  final UserRepository? userRepository;
 
   /// Estimativas de emissão da Climatiq; `null` mantém o cálculo local.
   final climatiq.CarbonScoringRepository? carbonEstimates;
@@ -38,11 +45,14 @@ class MainNavigationPage extends StatefulWidget {
 
 class _MainNavigationPageState extends State<MainNavigationPage> {
   late final ChatbotController _chatbot;
+  late final Stream<UserEntity> _userStream;
   int _index = 0;
 
   @override
   void initState() {
     super.initState();
+    _userStream = widget.userRepository?.watchUser() ??
+        Stream<UserEntity>.value(UserEntity(id: 'offline'));
     final carbonScores = widget.carbonScores;
     _chatbot = ChatbotController(
       carbonScores: carbonScores,
@@ -69,8 +79,12 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
           WalletPage(
             controller: widget.controller,
             notificationCapture: widget.notificationCapture,
+            userStream: _userStream,
           ),
-          EcoRewardsDashboardPage(repository: widget.carbonScores),
+          PlanGuardWidget(
+            userStream: _userStream,
+            child: EcoRewardsDashboardPage(repository: widget.carbonScores),
+          ),
           ChatbotPage(controller: _chatbot),
         ],
       ),

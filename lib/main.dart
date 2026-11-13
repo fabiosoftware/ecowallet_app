@@ -8,9 +8,10 @@ import 'package:flutter/material.dart';
 import 'app/core/notifications/notification_expense_capture_service.dart';
 import 'app/core/notifications/reminder_scheduler.dart';
 import 'app/data/repositories/firestore_expense_repository.dart';
-import 'app/data/repositories/in_memory_expense_repository.dart';
+import 'app/data/repositories/firestore_user_repository.dart';
 import 'app/data/repositories/local_expense_repository.dart';
 import 'app/domain/repositories/expense_repository.dart';
+import 'app/domain/repositories/user_repository.dart';
 import 'app/presentation/controllers/expense_controller.dart';
 import 'app/presentation/pages/main_navigation_page.dart';
 import 'features/wallet/data/repositories/carbon_score_repository.dart';
@@ -54,6 +55,7 @@ class _BootstrapState extends State<_Bootstrap> {
             controller: services.controller,
             carbonScores: services.carbonScores,
             carbonEstimates: services.carbonEstimates,
+            userRepository: services.userRepository,
             climatiqActivityIds: _climatiqActivityIds,
           );
         }
@@ -118,9 +120,8 @@ class _StartupErrorPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Verifique sua conexão com a internet e tente novamente. '
-                  'Você também pode continuar offline: seus gastos ficam '
-                  'salvos neste aparelho.',
+                  'Não foi possível iniciar os serviços ou o armazenamento '
+                  'local. Tente novamente ou tente continuar offline.',
                   textAlign: TextAlign.center,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
@@ -150,6 +151,8 @@ class _StartupErrorPage extends StatelessWidget {
 
 /// Limite total da inicialização, para o app nunca ficar preso no carregamento.
 const _startupTimeout = Duration(seconds: 45);
+const _firebaseStepTimeout = Duration(seconds: 10);
+const _localRepositoryTimeout = Duration(seconds: 10);
 
 Future<FirebaseApp>? _firebaseInitialization;
 
@@ -171,12 +174,14 @@ class _AppServices {
     required this.notificationCapture,
     this.carbonScores,
     this.carbonEstimates,
+    this.userRepository,
   });
 
   final ExpenseController controller;
   final NotificationExpenseCaptureService notificationCapture;
   final CarbonScoreRepository? carbonScores;
   final climatiq.CarbonScoringRepository? carbonEstimates;
+  final UserRepository? userRepository;
 }
 
 class _RepositorySetup {
@@ -184,18 +189,23 @@ class _RepositorySetup {
     required this.expenses,
     this.carbonScores,
     this.carbonScoring,
+    this.userRepository,
   });
 
   final ExpenseRepository expenses;
   final CarbonScoreRepository? carbonScores;
   final CarbonScoringRepository? carbonScoring;
+  final UserRepository? userRepository;
 }
 
 Future<_AppServices> _createServices() async {
   final setup = await _createRepository().timeout(_startupTimeout);
   final controller = await _buildController(setup.expenses);
-  final notificationCapture =
-      _startCardListener(setup.expenses, setup.carbonScoring);
+  final notificationCapture = _startCardListener(
+    setup.expenses,
+    setup.carbonScoring,
+    setup.userRepository?.watchUser().map((user) => user.plano == 'starter'),
+  );
   return _AppServices(
     controller: controller,
     notificationCapture: notificationCapture,
@@ -203,13 +213,15 @@ Future<_AppServices> _createServices() async {
     carbonEstimates: setup.carbonScores == null || _climatiqApiKey.isEmpty
         ? null
         : CarbonScoringRepositoryImpl(apiKey: _climatiqApiKey),
+    userRepository: setup.userRepository,
   );
 }
 
 Future<_AppServices> _createOfflineServices() async {
   final repository = await _createLocalRepository();
   final controller = await _buildController(repository, withReminders: false);
-  final notificationCapture = _startCardListener(repository, null);
+  final notificationCapture =
+      _startCardListener(repository, null, Stream<bool>.value(false));
   return _AppServices(
     controller: controller,
     notificationCapture: notificationCapture,
@@ -226,6 +238,7 @@ NotificationExpenseCaptureService? _notificationCapture;
 NotificationExpenseCaptureService _startCardListener(
   ExpenseRepository expenses,
   CarbonScoringRepository? carbonScoring,
+  Stream<bool>? planAccess,
 ) {
   final previousCapture = _notificationCapture;
   if (previousCapture != null) unawaited(previousCapture.dispose());
@@ -233,6 +246,7 @@ NotificationExpenseCaptureService _startCardListener(
   final listener = CardTransactionListenerService(
     expenseRepository: expenses,
     carbonScoringRepository: carbonScoring,
+    planAccess: planAccess,
   )..start();
   if (_simulateCards) listener.startSimulation();
   _cardListener = listener;
@@ -274,55 +288,88 @@ final ThemeData _theme = ThemeData(
 /// Usa Firestore (com login anônimo) quando o Firebase está disponível;
 /// caso contrário, persiste localmente com shared_preferences.
 Future<_RepositorySetup> _createRepository() async {
+  return initializeWithOfflineFallback(
+    online: _createFirebaseRepository,
+    offline: () async =>
+        _RepositorySetup(expenses: await _createLocalRepository()),
+    timeout: _firebaseStepTimeout * 2 + const Duration(seconds: 1),
+    onError: (error) =>
+        debugPrint('Firebase indisponível, usando repositório local: $error'),
+  );
+}
+
+@visibleForTesting
+Future<T> initializeWithOfflineFallback<T>({
+  required Future<T> Function() online,
+  required Future<T> Function() offline,
+  required Duration timeout,
+  required void Function(Object error) onError,
+}) async {
   try {
-    await _initializeFirebase().timeout(const Duration(seconds: 10));
-
-    final auth = FirebaseAuth.instance;
-    final user = auth.currentUser ??
-        (await auth.signInAnonymously().timeout(const Duration(seconds: 10)))
-            .user;
-
-    if (user != null) {
-      return _RepositorySetup(
-        expenses: FirestoreExpenseRepository(userId: user.uid),
-        carbonScores: CarbonScoreRepository(
-          FirebaseFirestore.instance,
-          userId: user.uid,
-        ),
-        carbonScoring: CarbonScoringRepository(userId: user.uid),
-      );
-    }
-    debugPrint('Sem usuário autenticado, usando repositório local.');
+    return await Future<T>.sync(online).timeout(timeout);
   } catch (e) {
-    debugPrint('Firebase indisponível, usando repositório local: $e');
+    onError(e);
+    return offline();
   }
-  return _RepositorySetup(expenses: await _createLocalRepository());
 }
 
-Future<FirebaseApp> _initializeFirebase() {
-  if (Firebase.apps.isNotEmpty) {
-    return Future<FirebaseApp>.value(Firebase.app());
+Future<_RepositorySetup> _createFirebaseRepository() async {
+  await _initializeFirebase();
+
+  final auth = FirebaseAuth.instance;
+  final user = auth.currentUser ??
+      (await auth.signInAnonymously().timeout(_firebaseStepTimeout)).user;
+
+  if (user == null) {
+    throw StateError('Firebase não retornou um usuário autenticado.');
   }
+  return _RepositorySetup(
+    expenses: FirestoreExpenseRepository(userId: user.uid),
+    carbonScores: CarbonScoreRepository(
+      FirebaseFirestore.instance,
+      userId: user.uid,
+    ),
+    carbonScoring: CarbonScoringRepository(userId: user.uid),
+    userRepository: FirestoreUserRepository(userId: user.uid),
+  );
+}
 
-  final initialization = _firebaseInitialization;
-  if (initialization != null) return initialization;
+Future<FirebaseApp> _initializeFirebase() async {
+  try {
+    if (Firebase.apps.isNotEmpty) return Firebase.app();
 
-  final attempt = Firebase.initializeApp();
-  _firebaseInitialization = attempt;
-  return attempt.whenComplete(() {
-    if (identical(_firebaseInitialization, attempt)) {
-      _firebaseInitialization = null;
+    var attempt = _firebaseInitialization;
+    if (attempt == null) {
+      late final Future<FirebaseApp> pending;
+      pending =
+          Future<FirebaseApp>.sync(Firebase.initializeApp).whenComplete(() {
+        if (identical(_firebaseInitialization, pending)) {
+          _firebaseInitialization = null;
+        }
+      });
+      _firebaseInitialization = pending;
+      attempt = pending;
     }
-  });
+
+    return await attempt.timeout(_firebaseStepTimeout);
+  } on TimeoutException catch (error) {
+    debugPrint('Tempo limite ao inicializar o Firebase: $error');
+    rethrow;
+  } catch (error) {
+    // Inclui falhas de rede; o chamador seleciona o repositório local.
+    debugPrint('Falha ao inicializar o Firebase: $error');
+    rethrow;
+  }
 }
 
-/// Repositório offline; se nem o armazenamento local funcionar, usa memória.
+/// Não inicia uma sessão sem persistência se o armazenamento local falhar.
 Future<ExpenseRepository> _createLocalRepository() async {
   try {
-    return await LocalExpenseRepository.create();
+    return await LocalExpenseRepository.create()
+        .timeout(_localRepositoryTimeout);
   } catch (e) {
-    debugPrint('Armazenamento local indisponível, usando memória: $e');
-    return InMemoryExpenseRepository();
+    debugPrint('Armazenamento local indisponível: $e');
+    rethrow;
   }
 }
 
@@ -332,6 +379,7 @@ class MyApp extends StatelessWidget {
     required this.controller,
     this.carbonScores,
     this.carbonEstimates,
+    this.userRepository,
     this.climatiqActivityIds = const {},
     this.notificationCapture,
   });
@@ -339,6 +387,7 @@ class MyApp extends StatelessWidget {
   final ExpenseController controller;
   final CarbonScoreRepository? carbonScores;
   final climatiq.CarbonScoringRepository? carbonEstimates;
+  final UserRepository? userRepository;
   final Map<String, String> climatiqActivityIds;
   final NotificationExpenseCaptureService? notificationCapture;
   @override
@@ -351,6 +400,7 @@ class MyApp extends StatelessWidget {
         controller: controller,
         carbonScores: carbonScores,
         carbonEstimates: carbonEstimates,
+        userRepository: userRepository,
         climatiqActivityIds: climatiqActivityIds,
         notificationCapture: notificationCapture,
       ),

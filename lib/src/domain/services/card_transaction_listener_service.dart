@@ -46,13 +46,17 @@ class CardTransactionListenerService {
   CardTransactionListenerService({
     required ExpenseRepository expenseRepository,
     CarbonScoringRepository? carbonScoringRepository,
+    Stream<bool>? planAccess,
     void Function(Object error, StackTrace stackTrace)? onError,
   })  : _expenses = expenseRepository,
         _carbon = carbonScoringRepository,
+        _planAccess = planAccess,
+        _planEnabled = planAccess == null,
         _onError = onError;
 
   final ExpenseRepository _expenses;
   final CarbonScoringRepository? _carbon;
+  final Stream<bool>? _planAccess;
   final void Function(Object error, StackTrace stackTrace)? _onError;
 
   final StreamController<CardTransactionEvent> _controller =
@@ -61,9 +65,11 @@ class CardTransactionListenerService {
   final Random _random = Random();
 
   StreamSubscription<CardTransactionEvent>? _subscription;
+  StreamSubscription<bool>? _planSubscription;
   Timer? _simulationTimer;
   int _simulationCounter = 0;
   bool _disposed = false;
+  bool _planEnabled;
 
   /// Stream de transações recebidas.
   Stream<CardTransactionEvent> get events => _controller.stream;
@@ -73,6 +79,15 @@ class CardTransactionListenerService {
   /// Começa a processar os eventos da [events]. Chamadas repetidas são ignoradas.
   void start() {
     if (_disposed || _subscription != null) return;
+    _planSubscription = _planAccess?.listen(
+      (enabled) => _planEnabled = enabled,
+      onError: (Object error, StackTrace stack) {
+        _planEnabled = false;
+        _onError?.call(error, stack);
+        debugPrint('Falha ao verificar o plano da automação: $error');
+      },
+      onDone: () => _planEnabled = false,
+    );
     _subscription = _controller.stream.listen(
       (event) => unawaited(_process(event)),
     );
@@ -115,10 +130,13 @@ class CardTransactionListenerService {
     final subscription = _subscription;
     _subscription = null;
     await subscription?.cancel();
+    await _planSubscription?.cancel();
+    _planSubscription = null;
     await _controller.close();
   }
 
   Future<void> _process(CardTransactionEvent event) async {
+    if (!_planEnabled) return;
     if (!event.valor.isFinite || event.valor <= 0) return;
     if (!_processed.add(event.id)) return;
 

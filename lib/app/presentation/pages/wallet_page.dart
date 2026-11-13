@@ -1,9 +1,14 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/notifications/notification_expense_capture_service.dart';
 import '../../core/utils/formatters.dart';
 import '../../domain/entities/expense_entity.dart';
+import '../../domain/entities/user_entity.dart';
 import '../controllers/expense_controller.dart';
+import '../widgets/plan_guard_widget.dart';
 import '../widgets/quick_add_expense_sheet.dart';
 
 class WalletPage extends StatelessWidget {
@@ -11,10 +16,15 @@ class WalletPage extends StatelessWidget {
     super.key,
     required this.controller,
     this.notificationCapture,
+    this.userStream,
   });
 
   final ExpenseController controller;
   final NotificationExpenseCaptureService? notificationCapture;
+  final Stream<UserEntity>? userStream;
+
+  Stream<UserEntity> get _planStream =>
+      userStream ?? Stream<UserEntity>.value(UserEntity(id: 'offline'));
 
   @override
   Widget build(BuildContext context) {
@@ -30,24 +40,6 @@ class WalletPage extends StatelessWidget {
         centerTitle: false,
         elevation: 0,
         backgroundColor: Colors.transparent,
-        actions: [
-          if (notificationCapture != null)
-            ValueListenableBuilder<NotificationCaptureStatus>(
-              valueListenable: notificationCapture!.status,
-              builder: (context, status, _) => IconButton(
-                key: const Key('notification_capture_button'),
-                tooltip: status == NotificationCaptureStatus.listening
-                    ? 'Captura de notificações ativa'
-                    : 'Configurar captura de notificações',
-                onPressed: () => _configureNotificationCapture(context),
-                icon: Icon(
-                  status == NotificationCaptureStatus.listening
-                      ? Icons.notifications_active_outlined
-                      : Icons.notifications_none_outlined,
-                ),
-              ),
-            ),
-        ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         key: const Key('add_expense_fab'),
@@ -124,10 +116,40 @@ class WalletPage extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 96),
       physics: const BouncingScrollPhysics(),
       children: [
+        const _ProductOverviewCard(),
+        const SizedBox(height: 16),
         _SummaryCard(
           today: controller.todayTotal,
           month: controller.monthTotal,
         ),
+        if (notificationCapture != null) ...[
+          const SizedBox(height: 16),
+          PlanGuardWidget(
+            userStream: _planStream,
+            compact: true,
+            child: ValueListenableBuilder<NotificationCaptureStatus>(
+              valueListenable: notificationCapture!.status,
+              builder: (context, status, _) => Card(
+                child: ListTile(
+                  key: const Key('notification_capture_button'),
+                  leading: Icon(
+                    status == NotificationCaptureStatus.listening
+                        ? Icons.notifications_active_outlined
+                        : Icons.notifications_none_outlined,
+                  ),
+                  title: const Text('Automação de compras'),
+                  subtitle: Text(
+                    status == NotificationCaptureStatus.listening
+                        ? 'Captura de notificações ativa'
+                        : 'Registrar compras automaticamente',
+                  ),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: () => _configureNotificationCapture(context),
+                ),
+              ),
+            ),
+          ),
+        ],
         if (controller.errorMessage != null)
           Padding(
             padding: const EdgeInsets.only(top: 12),
@@ -169,6 +191,65 @@ class WalletPage extends StatelessWidget {
             for (final expense in group.items) _ExpenseTile(expense: expense),
           ],
       ],
+    );
+  }
+}
+
+class _ProductOverviewCard extends StatelessWidget {
+  const _ProductOverviewCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final muted = theme.colorScheme.onSurfaceVariant;
+
+    return Card(
+      elevation: 0,
+      color: theme.colorScheme.surfaceContainerLow,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Finanças empresariais com visão ESG',
+              style: theme.textTheme.titleLarge
+                  ?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Automatize registros de compras com autorização e acompanhe '
+              'gastos do dia, do mês e estimativas de carbono em um só lugar.',
+              style: theme.textTheme.bodyMedium?.copyWith(color: muted),
+            ),
+            if (kIsWeb) ...[
+              const SizedBox(height: 16),
+              const Divider(),
+              const SizedBox(height: 8),
+              Text(
+                'Uma base modular para evoluir',
+                style: theme.textTheme.titleMedium
+                    ?.copyWith(fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Aplicativo multiplataforma em Flutter, camadas inspiradas '
+                'em Clean Architecture e API REST em Go — uma base para '
+                'expandir serviços conforme a operação B2B cresce.',
+                style: theme.textTheme.bodyMedium?.copyWith(color: muted),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'O backend Go ainda usa armazenamento demonstrativo em '
+                'memória; autenticação corporativa e persistência de produção '
+                'precisam ser concluídas antes da operação comercial.',
+                style: theme.textTheme.bodySmall?.copyWith(color: muted),
+              ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }
