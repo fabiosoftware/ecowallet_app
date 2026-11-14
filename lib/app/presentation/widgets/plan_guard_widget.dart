@@ -5,6 +5,93 @@ import '../../domain/entities/user_entity.dart';
 
 const String kCheckoutStarterUrl = 'https://ecowallet-app-2026.web.app';
 
+Future<void> showStarterPlanDialog(BuildContext context) {
+  return showDialog<void>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Plano Starter B2B'),
+      content: const SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Finanças empresariais com visão ESG',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Automatize registros de compras com autorização e acompanhe '
+              'gastos e estimativas de carbono.',
+            ),
+            SizedBox(height: 16),
+            Text(
+              'Uma base modular para evoluir',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Aplicativo em Flutter e API REST em Go. O backend usa '
+              'armazenamento demonstrativo em memória; autenticação '
+              'corporativa e persistência de produção ainda precisam ser '
+              'concluídas.',
+            ),
+            SizedBox(height: 16),
+            Text(
+              'As estimativas de carbono são informativas e não substituem '
+              'um inventário de emissões verificado.',
+            ),
+            SizedBox(height: 16),
+            Text(
+              'R\$ 499,00/mês',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Fechar'),
+        ),
+        const StarterCheckoutButton(),
+      ],
+    ),
+  );
+}
+
+class StarterCheckoutButton extends StatelessWidget {
+  const StarterCheckoutButton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return FilledButton.icon(
+      onPressed: () => _openCheckout(context),
+      icon: const Icon(Icons.open_in_new_rounded),
+      label: const Text('Conhecer o Plano Starter'),
+    );
+  }
+
+  Future<void> _openCheckout(BuildContext context) async {
+    final uri = Uri.parse(kCheckoutStarterUrl);
+    try {
+      final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!opened && context.mounted) {
+        _showCheckoutError(context);
+      }
+    } catch (error) {
+      if (context.mounted) _showCheckoutError(context);
+      debugPrint('Não foi possível abrir o checkout do Starter: $error');
+    }
+  }
+
+  void _showCheckoutError(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Não foi possível abrir o checkout.')),
+    );
+  }
+}
+
 class PlanGuardWidget extends StatelessWidget {
   const PlanGuardWidget({
     super.key,
@@ -112,11 +199,7 @@ class _StarterPaywall extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 20),
-        FilledButton.icon(
-          onPressed: () => _openCheckout(context),
-          icon: const Icon(Icons.open_in_new_rounded),
-          label: const Text('Conhecer o Plano Starter'),
-        ),
+        const StarterCheckoutButton(),
       ],
     );
 
@@ -148,25 +231,6 @@ class _StarterPaywall extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-
-  Future<void> _openCheckout(BuildContext context) async {
-    final uri = Uri.parse(kCheckoutStarterUrl);
-    try {
-      final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
-      if (!opened && context.mounted) {
-        _showCheckoutError(context);
-      }
-    } catch (error) {
-      if (context.mounted) _showCheckoutError(context);
-      debugPrint('Não foi possível abrir o checkout do Starter: $error');
-    }
-  }
-
-  void _showCheckoutError(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Não foi possível abrir o checkout.')),
     );
   }
 }

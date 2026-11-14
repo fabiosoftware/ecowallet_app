@@ -1,13 +1,19 @@
 import 'package:flutter/material.dart';
 
+import '../../../../app/presentation/widgets/plan_guard_widget.dart';
 import '../../data/models/carbon_score_model.dart';
 import '../../data/repositories/carbon_score_repository.dart';
 
 class EcoRewardsDashboardPage extends StatefulWidget {
-  const EcoRewardsDashboardPage({super.key, this.repository});
+  const EcoRewardsDashboardPage({
+    super.key,
+    this.repository,
+    this.showStarterBanner = false,
+  });
 
   /// `null` quando o Firebase está indisponível: o painel abre sem transações.
   final CarbonScoreRepository? repository;
+  final bool showStarterBanner;
 
   @override
   State<EcoRewardsDashboardPage> createState() =>
@@ -80,73 +86,105 @@ class _EcoRewardsDashboardPageState extends State<EcoRewardsDashboardPage> {
         foregroundColor: _graphite,
       ),
       body: SafeArea(
-        child: StreamBuilder<List<CarbonScoreModel>>(
-          stream: _scores,
-          builder: (context, snapshot) {
-            if (snapshot.hasError) {
-              return const _ErrorState();
-            }
-            if (!snapshot.hasData) {
-              return const Center(
-                child: CircularProgressIndicator(color: _green),
-              );
-            }
-
-            final scores = snapshot.data!;
-            final totalPoints = scores.fold<int>(
-              0,
-              (total, score) => total + score.greenPointsEarned,
-            );
-            final history = scores.take(_historyLimit).toList();
-
-            return ListView(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
-              physics: const BouncingScrollPhysics(),
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(4, 8, 4, 0),
-                  child: Text(
-                    'Acompanhe estimativas de carbono e pontos associados às '
-                    'transações. Os valores são informativos e não equivalem '
-                    'a um inventário de emissões verificado.',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: _graphiteSoft,
+        child: Column(
+          children: [
+            if (widget.showStarterBanner)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
+                child: Card(
+                  color: Theme.of(context).colorScheme.primaryContainer,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    child: Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 16,
+                      runSpacing: 4,
+                      children: [
+                        const Text('Plano Starter B2B · R\$ 499,00/mês'),
+                        TextButton(
+                          onPressed: () => showStarterPlanDialog(context),
+                          child: const Text('Conhecer o Plano Starter'),
                         ),
+                      ],
+                    ),
                   ),
                 ),
-                const SizedBox(height: 16),
-                _BalanceHeader(points: totalPoints),
-                const SizedBox(height: 28),
-                const _SectionTitle(
-                  icon: Icons.card_giftcard_rounded,
-                  title: 'Resgatar recompensas',
-                ),
-                const SizedBox(height: 8),
-                for (final reward in _rewards)
-                  _RewardCard(
-                    reward: reward,
-                    affordable: totalPoints >= reward.cost,
-                    onTap: () => _onRewardTap(reward, totalPoints),
-                  ),
-                const SizedBox(height: 28),
-                const _SectionTitle(
-                  icon: Icons.history_rounded,
-                  title: 'Histórico de estimativas ambientais',
-                ),
-                const SizedBox(height: 8),
-                if (history.isEmpty)
-                  const _EmptyHistory()
-                else
-                  ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: history.length,
-                    itemBuilder: (context, index) =>
-                        _TransactionTile(score: history[index]),
-                  ),
-              ],
-            );
-          },
+              ),
+            Expanded(
+              child: StreamBuilder<List<CarbonScoreModel>>(
+                stream: _scores,
+                builder: (context, snapshot) {
+                  if (snapshot.hasError) {
+                    return const _ErrorState();
+                  }
+                  if (!snapshot.hasData) {
+                    return const Center(
+                      child: CircularProgressIndicator(color: _green),
+                    );
+                  }
+
+                  final scores = snapshot.data!;
+                  final totalPoints = scores.fold<int>(
+                    0,
+                    (total, score) => total + score.greenPointsEarned,
+                  );
+                  final history = scores.take(_historyLimit).toList();
+
+                  return ListView(
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+                    physics: const BouncingScrollPhysics(),
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(4, 8, 4, 0),
+                        child: Text(
+                          'Acompanhe estimativas de carbono e pontos associados às '
+                          'transações. Os valores são informativos e não equivalem '
+                          'a um inventário de emissões verificado.',
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: _graphiteSoft,
+                                  ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      _BalanceHeader(points: totalPoints),
+                      const SizedBox(height: 28),
+                      const _SectionTitle(
+                        icon: Icons.card_giftcard_rounded,
+                        title: 'Resgatar recompensas',
+                      ),
+                      const SizedBox(height: 8),
+                      for (final reward in _rewards)
+                        _RewardCard(
+                          reward: reward,
+                          affordable: totalPoints >= reward.cost,
+                          onTap: () => _onRewardTap(reward, totalPoints),
+                        ),
+                      const SizedBox(height: 28),
+                      const _SectionTitle(
+                        icon: Icons.history_rounded,
+                        title: 'Histórico de estimativas ambientais',
+                      ),
+                      const SizedBox(height: 8),
+                      if (history.isEmpty)
+                        const _EmptyHistory()
+                      else
+                        ListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: history.length,
+                          itemBuilder: (context, index) =>
+                              _TransactionTile(score: history[index]),
+                        ),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ],
         ),
       ),
     );

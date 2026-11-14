@@ -17,11 +17,13 @@ class WalletPage extends StatelessWidget {
     required this.controller,
     this.notificationCapture,
     this.userStream,
+    this.isWeb = kIsWeb,
   });
 
   final ExpenseController controller;
   final NotificationExpenseCaptureService? notificationCapture;
   final Stream<UserEntity>? userStream;
+  final bool isWeb;
 
   Stream<UserEntity> get _planStream =>
       userStream ?? Stream<UserEntity>.value(UserEntity(id: 'offline'));
@@ -40,6 +42,15 @@ class WalletPage extends StatelessWidget {
         centerTitle: false,
         elevation: 0,
         backgroundColor: Colors.transparent,
+        actions: [
+          if (isWeb)
+            IconButton(
+              key: const Key('starter_plan_app_bar_button'),
+              tooltip: 'Conhecer o Plano Starter',
+              onPressed: () => showStarterPlanDialog(context),
+              icon: const Icon(Icons.info_outline_rounded),
+            ),
+        ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         key: const Key('add_expense_fab'),
@@ -116,13 +127,15 @@ class WalletPage extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 96),
       physics: const BouncingScrollPhysics(),
       children: [
-        const _ProductOverviewCard(),
-        const SizedBox(height: 16),
+        if (!isWeb) ...[
+          const _ProductOverviewCard(),
+          const SizedBox(height: 16),
+        ],
         _SummaryCard(
           today: controller.todayTotal,
           month: controller.monthTotal,
         ),
-        if (notificationCapture != null) ...[
+        if (!isWeb && notificationCapture != null) ...[
           const SizedBox(height: 16),
           PlanGuardWidget(
             userStream: _planStream,
@@ -223,30 +236,6 @@ class _ProductOverviewCard extends StatelessWidget {
               'gastos do dia, do mês e estimativas de carbono em um só lugar.',
               style: theme.textTheme.bodyMedium?.copyWith(color: muted),
             ),
-            if (kIsWeb) ...[
-              const SizedBox(height: 16),
-              const Divider(),
-              const SizedBox(height: 8),
-              Text(
-                'Uma base modular para evoluir',
-                style: theme.textTheme.titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'Aplicativo multiplataforma em Flutter, camadas inspiradas '
-                'em Clean Architecture e API REST em Go — uma base para '
-                'expandir serviços conforme a operação B2B cresce.',
-                style: theme.textTheme.bodyMedium?.copyWith(color: muted),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'O backend Go ainda usa armazenamento demonstrativo em '
-                'memória; autenticação corporativa e persistência de produção '
-                'precisam ser concluídas antes da operação comercial.',
-                style: theme.textTheme.bodySmall?.copyWith(color: muted),
-              ),
-            ],
           ],
         ),
       ),

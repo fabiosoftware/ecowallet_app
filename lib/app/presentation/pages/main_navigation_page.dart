@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/notifications/notification_expense_capture_service.dart';
@@ -25,6 +26,7 @@ class MainNavigationPage extends StatefulWidget {
     this.userRepository,
     this.climatiqActivityIds = const {},
     this.notificationCapture,
+    this.isWeb = kIsWeb,
   });
 
   final ExpenseController controller;
@@ -38,6 +40,7 @@ class MainNavigationPage extends StatefulWidget {
   final climatiq.CarbonScoringRepository? carbonEstimates;
   final Map<String, String> climatiqActivityIds;
   final NotificationExpenseCaptureService? notificationCapture;
+  final bool isWeb;
 
   @override
   State<MainNavigationPage> createState() => _MainNavigationPageState();
@@ -80,11 +83,18 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
             controller: widget.controller,
             notificationCapture: widget.notificationCapture,
             userStream: _userStream,
+            isWeb: widget.isWeb,
           ),
-          PlanGuardWidget(
-            userStream: _userStream,
-            child: EcoRewardsDashboardPage(repository: widget.carbonScores),
-          ),
+          if (widget.isWeb)
+            EcoRewardsDashboardPage(
+              repository: widget.carbonScores,
+              showStarterBanner: true,
+            )
+          else
+            PlanGuardWidget(
+              userStream: _userStream,
+              child: EcoRewardsDashboardPage(repository: widget.carbonScores),
+            ),
           ChatbotPage(controller: _chatbot),
         ],
       ),
